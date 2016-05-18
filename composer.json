@@ -1,5 +1,5 @@
 {
-    "name": "sergiu-paraschiv/PHPCI-mocha",
+    "name": "sergiu-paraschiv/phpci-mocha",
     "description": "npm mocha plugin for PHPCI",
     "authors": [
         {
