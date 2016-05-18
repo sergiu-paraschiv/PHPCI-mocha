@@ -32,3 +32,5 @@ Npm should run with the `-s` flag.
 Mocha should run with the `-f json` flag.
 
 `test:ci` in `package.json` should be `"mocha --reporter mocha-tap-reporter --recursive app/test"`
+
+To get output in the Information tab you'll need to copy the `public` folder into your PHPCI installation's `public` folder.
