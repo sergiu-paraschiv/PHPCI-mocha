@@ -4,8 +4,7 @@ namespace SergiuParaschiv\PHPCI\Plugin;
 
 use PHPCI\Builder;
 use PHPCI\Model\Build;
-use PHPCI\Model\BuildError;
-use PHPCI\Helper\Lang;
+use PHPCI\Plugin\Util\TapParser;
 
 /**
  * Update related Redmine issue with build status
@@ -18,8 +17,6 @@ class Mocha implements \PHPCI\Plugin
         $this->build = $build;
         $this->directory = '';
         $this->command = '';
-        $this->allowed_warnings = 0;
-        $this->allowed_errors = 0;
 
         if (isset($options['directory'])) {
             $this->directory = $options['directory'];
@@ -27,14 +24,6 @@ class Mocha implements \PHPCI\Plugin
 
         if (isset($options['command'])) {
             $this->command = $options['command'];
-        }
-
-        if (isset($options['allowed_warnings'])) {
-            $this->allowed_warnings = $options['allowed_warnings'];
-        }
-
-        if (isset($options['allowed_errors'])) {
-            $this->allowed_errors = $options['allowed_errors'];
         }
     }
 
@@ -54,53 +43,27 @@ class Mocha implements \PHPCI\Plugin
 
         $cmd = 'cd ' . $this->directory . '; ' . $this->command;
         $this->phpci->executeCommand($cmd);
-        $output = $this->phpci->getLastOutput();
 
-        list($errors, $warnings) = $this->processReport($output);
+        $tapString = $this->phpci->getLastOutput();
+        $tapString = mb_convert_encoding($tapString, "UTF-8", "ISO-8859-1");
 
-        $this->phpci->logExecOutput(true);
+        $tapString = 'TAP version 13' . "\n" . $tapString;
 
-        if ($this->allowed_warnings != -1 && $warnings > $this->allowed_warnings) {
-            $success = false;
+        try {
+            $tapParser = new TapParser($tapString);
+            $output = $tapParser->parse();
+        } catch (\Exception $ex) {
+            $this->phpci->logFailure($tapString);
+            throw $ex;
         }
 
-        if ($this->allowed_errors != -1 && $errors > $this->allowed_errors) {
-            $success = false;
-        }
+        $failures = $tapParser->getTotalFailures();
 
-        return true;
-    }
+        $success = ($failures === 0);
 
-    protected function processReport($output)
-    {
-        $data = json_decode(trim($output));
+        $this->build->storeMeta('mocha-errors', $failures);
+        $this->build->storeMeta('mocha-data', $output);
 
-        if (!is_array($data)) {
-            $this->phpci->log($output);
-            throw new \Exception(Lang::get('could_not_process_report'));
-        }
-
-        $errors = 0;
-        $warnings = 0;
-
-        foreach ($data as $file) {
-            $fileName = str_replace($this->phpci->buildPath, '', $file->filePath);
-
-            $errors += $file->errorCount;
-            $warnings = $file->warningCount;
-
-            foreach ($file->messages as $message) {
-                $this->build->reportError(
-                    $this->phpci,
-                    'phplint_errors',
-                    'ESLINT: ' . $message->message . "\n" . $message->source,
-                    $message->severity == 2 ? BuildError::SEVERITY_HIGH : BuildError::SEVERITY_LOW,
-                    $fileName,
-                    $message->line
-                );
-            }
-        }
-
-        return array($errors, $warnings);
+        return $success;
     }
 }
