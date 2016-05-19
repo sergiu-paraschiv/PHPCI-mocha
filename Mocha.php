@@ -71,6 +71,8 @@ class Mocha implements \PHPCI\Plugin
         $this->build->storeMeta('mocha-errors', $failures);
         $this->build->storeMeta('mocha-data', $output);
 
+        $this->phpci->logExecOutput(true);
+
         return $success;
     }
 }
