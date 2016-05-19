@@ -14,6 +14,7 @@ class Mocha implements \PHPCI\Plugin
         $this->build = $build;
         $this->directory = '';
         $this->command = '';
+        $this->data_offset = 0;
 
         if (isset($options['directory'])) {
             $this->directory = $options['directory'];
@@ -21,6 +22,10 @@ class Mocha implements \PHPCI\Plugin
 
         if (isset($options['command'])) {
             $this->command = $options['command'];
+        }
+
+        if (isset($options['data_offset'])) {
+            $this->data_offset = $options['data_offset'];
         }
     }
 
@@ -42,6 +47,11 @@ class Mocha implements \PHPCI\Plugin
         $this->phpci->executeCommand($cmd);
 
         $tapString = $this->phpci->getLastOutput();
+
+        if($this->data_offset) {
+            $tapString = implode("\n", array_slice(explode("\n", $tapString), $this->data_offset));
+        }
+
         $tapString = mb_convert_encoding($tapString, "UTF-8", "ISO-8859-1");
 
         $tapString = 'TAP version 13' . "\n" . $tapString;
