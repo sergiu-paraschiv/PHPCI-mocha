@@ -13,12 +13,13 @@ Then the task to `phpci.yml`:
 ```
 \SergiuParaschiv\PHPCI\Plugin\Mocha:
     directory: "frontend"
-    command: "npm run -s test:ci"
+    command: "npm run test:ci"
+    data_offset: 2
 ```
 
-Npm should run with the `-s` flag.
-
 Mocha should run with the `-f json` flag.
+
+`data_offset` is the number of lines at the top of the output to skip before parsing the response.
 
 `test:ci` in `package.json` should be `"mocha --reporter mocha-tap-reporter --recursive app/test"`
 
